@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset='UTF-8'>
+		<title>Linker</title>
+		<style>
+			body, input {
+				font-family: courier,arial;
+				color: white;
+			}
+			#main_title {
+				position: absolute;
+				top: 30px;
+				left: 30px;
+				color: #ff4d4d;
+				font-weight: bold;
+				font-size: 30px;
+			}
+			#CLI {
+				height: 300px;
+				width: 650px;
+				padding: 25px;
+				position: absolute;
+				margin: auto;
+				top: 0;
+				right: 0;
+				bottom: 0;
+				left: 0;
+				background: black;
+				border-radius: 0 0 7px 7px;
+			}
+			
+			#CLI #bar {
+				position: absolute;
+				top: -25px;
+				left: 0;
+				right: 0;
+				width: 100%;
+				height: 25px;
+				border-radius: 7px 7px 0 0;
+				background: #e0e0e0;
+				text-align: center;
+			}
+			
+			#CLI #bar #title {
+				font-size: 80%;
+				color: #757575;
+				margin-top: 5px;
+			}
+			#CLI #bar #green {
+				position: absolute;
+				top: 5px;
+				right: 10px;
+				height: 15px;
+				width: 15px;
+				border-radius: 25px;
+				background: #3cba3c;
+				border: solid 1px grey;
+			}
+			#CLI #bar #orange {
+				position: absolute;
+				top: 5px;
+				right: 33px;
+				height: 15px;
+				width: 15px;
+				border-radius: 25px;
+				background: #fcbd51;
+				border: solid 1px grey;
+			}
+			#CLI #bar #red {
+				position: absolute;
+				top: 5px;
+				right: 56px;
+				height: 15px;
+				width: 15px;
+				border-radius: 25px;
+				background: #ff5757;
+				border: solid 1px grey;
+			}
+			#texte {
+				margin-top: 50px;
+				font-size: 15px;
+			}
+			#url_input {
+				background: none;
+				border: none;
+				outline: none;
+				font-size: 15px;
+				width: 530px;
+				border-bottom: solid 1px white;
+			}
+			#submit_button {
+				border: solid 2px white;
+				padding: 6px;
+				cursor: pointer;
+			}
+			#submit_button:hover {
+				border-color: grey;
+			}
+			#author {
+				position: absolute;
+				bottom: 10px;
+				left: 10px;
+				color: #808080;
+			}
+		</style>
+		<script src="https://www.google.com/recaptcha/api.js?render=[recaptcha_public_key]"></script>
+		<script>
+			function get_link(){
+
+				grecaptcha.ready(function() {
+					grecaptcha.execute('[recaptcha_public_key]', {action: 'get_link'}).then(function(token) {
+						var xhr = null; 
+						if(window.XMLHttpRequest){ // Firefox et autres
+							xhr = new XMLHttpRequest(); 
+						}else if(window.ActiveXObject){ // Internet Explorer 
+							try {
+								xhr = new ActiveXObject('Msxml2.XMLHTTP');
+							} catch (e) {
+								xhr = new ActiveXObject('Microsoft.XMLHTTP');
+							}
+						}else{
+							alert('Votre navigateur ne supporte pas les objets XMLHTTPRequest...'); 
+							xhr = false; 
+						}
+						
+						xhr.onreadystatechange = function(){
+								
+							if( xhr.readyState < 4 ){
+								
+								//loading
+								
+							}else if(xhr.readyState == 4 && xhr.status == 200){
+								
+								var response = xhr.responseText;
+
+								//end loading
+
+								try {
+									result = JSON.parse(response);
+									if(result["state"] != "OK"){
+										throw 'State error';
+									}else{
+										document.location = result["link"];
+									}
+								} catch(error) {
+									document.getElementById("result").innerHTML = xhr.responseText;
+								}
+
+							}
+							
+						}
+						
+						xhr.open('POST', '', true);
+						xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+						xhr.send("token="+JSON.stringify(token));
+
+					});
+				});
+			}
+		</script>
+	</head>
+	<body>
+		<div id='main_title'>Linker</div>
+		<div id='CLI'>
+			<div id='bar'>
+				<div id='title'>Linker - [url]</div>
+				<div id='green'></div>
+				<div id='orange'></div>
+				<div id='red'></div>
+			</div>
+			<div id='texte'>
+				<br/><br/><br/><br/><br/>
+				<center><span id="submit_button" onClick="get_link()" >Continue</span><center>
+				<br/><br/><br/>
+				<span id="result"></span>
+			</div>
+		</div>
+		<a href="https://contact.sellan.fr"><div id="author">Etienne SELLAN</div></a>
+	</body>
+</html>
