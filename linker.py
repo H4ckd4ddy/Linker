@@ -116,7 +116,7 @@ class request_handler(BaseHTTPRequestHandler):
                 # Send HTML page with replaced data
                 html = homepage.read()
                 html = html.replace("[url]", settings["url"])
-                html = html.replace("[delete_limit]", human_readable_time(settings["delete_limit"] * 60 * 60))
+                html = html.replace("[delete_limit]", human_readable_time(int(settings["delete_limit"]) * 60 * 60))
                 self.wfile.write(str.encode(html))
         return
 
