@@ -41,8 +41,8 @@ settings["id_length"] = 4  # bytes
 settings["max_link_length"] = 1024  # chars
 settings["enable_logs"] = False
 settings["logs_path"] = "/var/log"
-settings["recaptcha_public_key"] = None
-settings["recaptcha_private_key"] = None
+settings["recaptcha_public_key"] = ''
+settings["recaptcha_private_key"] = ''
 settings["recaptcha_api_url"] = "https://www.google.com/recaptcha/api/siteverify"
 # SETTINGS END
 
@@ -114,7 +114,10 @@ class request_handler(BaseHTTPRequestHandler):
                 self.send_header('Content-type', 'text/html')
                 self.end_headers()
                 # Send HTML page with replaced data
-                self.wfile.write(str.encode(homepage.read().replace("[url]", settings["url"])))
+                html = homepage.read()
+                html = html.replace("[url]", settings["url"])
+                html = html.replace("[delete_limit]", human_readable_time(settings["delete_limit"] * 60 * 60))
+                self.wfile.write(str.encode(html))
         return
 
     def do_POST(self):
