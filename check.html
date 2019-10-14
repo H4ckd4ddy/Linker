@@ -99,6 +99,9 @@
 			#submit_button:hover {
 				border-color: grey;
 			}
+			.error {
+				color: red;
+			}
 			#author {
 				position: absolute;
 				bottom: 10px;
@@ -152,6 +155,8 @@
 									document.getElementById("result").innerHTML = xhr.responseText;
 								}
 
+							}else{
+								document.getElementById("result").innerHTML = '<span class="error">' + xhr.responseText + '</span>';
 							}
 							
 						}
