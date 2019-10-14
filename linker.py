@@ -97,16 +97,24 @@ def initialisation():
 
 class request_handler(BaseHTTPRequestHandler):
     def do_GET(self):  # For home page and link access
-        if len(self.path) > 1:
-            with open(settings["current_directory"]+'/'+'check.html', 'r') as checkpage:
-                self.send_response(200)
-                self.send_header('Content-type', 'text/html')
-                self.end_headers()
-                # Send HTML page with replaced data
-                html = checkpage.read()
-                html = html.replace("[url]", settings["url"])
-                html = html.replace("[recaptcha_public_key]", settings["recaptcha_public_key"])
-                self.wfile.write(str.encode(html))
+        self.request_path = path_to_array(self.path)
+        if len(self.request_path) > 0:
+            if self.request_path[0] == "Github-ribbon.png":
+                with open(settings["current_directory"]+'/'+'Github-ribbon.png', 'rb') as image:
+                    self.send_response(200)
+                    self.send_header('Content-type', 'image/png')
+                    self.end_headers()
+                    self.wfile.write(image.read())
+            else:
+                with open(settings["current_directory"]+'/'+'check.html', 'r') as checkpage:
+                    self.send_response(200)
+                    self.send_header('Content-type', 'text/html')
+                    self.end_headers()
+                    # Send HTML page with replaced data
+                    html = checkpage.read()
+                    html = html.replace("[url]", settings["url"])
+                    html = html.replace("[recaptcha_public_key]", settings["recaptcha_public_key"])
+                    self.wfile.write(str.encode(html))
         else:
             # Open HTML homepage file
             with open(settings["current_directory"]+'/'+'index.html', 'r') as homepage:
