@@ -277,7 +277,7 @@ def clean_files():
         if os.path.isfile(array_to_path(directory+[file])):
             # Get informations about this file
             stats = os.stat(array_to_path(directory+[file]))
-            timestamp = stats.st_ctime
+            timestamp = stats.st_mtime
             if timestamp < limit_date:
                 removed.append(file)
                 os.remove(array_to_path(directory+[file]))
