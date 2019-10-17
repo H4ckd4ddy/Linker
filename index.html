@@ -81,6 +81,12 @@
 				margin-top: 50px;
 				font-size: 15px;
 			}
+			#home {
+				display: none;
+			}
+			#check {
+				display: none;
+			}
 			#url_input {
 				background: none;
 				border: none;
@@ -89,13 +95,20 @@
 				width: 530px;
 				border-bottom: solid 1px white;
 			}
-			#submit_button {
+			.button {
 				border: solid 2px white;
 				padding: 6px;
 				cursor: pointer;
 			}
+			.continue_button {
+				font-size: 50px;
+				font-weight: bold;
+			}
 			#submit_button:hover {
 				border-color: grey;
+			}
+			.error {
+				color: red;
 			}
 			#author {
 				position: absolute;
@@ -103,12 +116,13 @@
 				left: 10px;
 				color: #808080;
 			}
+			.grecaptcha-badge {
+				visibility: hidden;
+			}
 		</style>
+		<script src="https://www.google.com/recaptcha/api.js?render=[recaptcha_public_key]"></script>
 		<script>
-			function submit_link(){
-
-				var link = document.getElementById('url_input').value;
-
+			function send_data(data, callback){
 				var xhr = null; 
 				if(window.XMLHttpRequest){ // Firefox et autres
 					xhr = new XMLHttpRequest(); 
@@ -122,38 +136,178 @@
 					alert('Votre navigateur ne supporte pas les objets XMLHTTPRequest...'); 
 					xhr = false; 
 				}
-				
 				xhr.onreadystatechange = function(){
-						
 					if( xhr.readyState < 4 ){
-						
 						//loading
-						
 					}else if(xhr.readyState == 4 && xhr.status == 200){
-						
 						var response = xhr.responseText;
-						
 						//end loading
-
-						try {
-							response = JSON.parse(response);
-							if(response["state"] != "OK"){
-								throw 'State error';
-							}else{
-								document.getElementById("result").innerHTML = "Your protected link : " + response["link"];
-							}
-						} catch(error) {
-							document.getElementById("result").innerHTML = xhr.responseText;
-						}
-
+						callback(response);
 					}
-					
 				}
-				
 				xhr.open('POST', '/', true);
 				xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-				xhr.send("link="+JSON.stringify(link));
+				xhr.send(data);
 			}
+
+			function buf2hex(buffer){
+				return Array.prototype.map.call(new Uint8Array(buffer), x => ('00' + x.toString(16)).slice(-2)).join('');
+			}
+
+			function hex2buf(string) {
+				return new Uint8Array(string.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+			}
+
+			function str2buf(string){
+			    var bytes = new Uint8Array(string.length);
+			    for (var i = 0; i < string.length; i++){
+			        bytes[i] = string.charCodeAt(i);
+			    }
+			    return bytes;
+			}
+
+			function buf2str(buffer){
+			    var str = "";
+			    for (var i = 0; i < buffer.byteLength; i++){
+			        str += String.fromCharCode(buffer[i]);
+			    }
+			    return str;
+			}
+
+			function sha512(message){
+				var encoder = new TextEncoder()
+				return window.crypto.subtle.digest(
+				    {
+				        name: "SHA-512",
+				    },
+				    new Uint8Array(encoder.encode(message))
+				).then(function(hash){
+			    	return buf2hex(hash);
+				}).catch(function(err){
+				    console.error(err);
+				});
+			}
+
+			function aes256_encrypt(key, string_data){
+				var iv = window.crypto.getRandomValues(new Uint8Array(16));
+				console.log(str2buf(string_data));
+				window.crypto.subtle.importKey(
+					"raw",
+					str2buf('azertyuiopazertyuiopazertyuiopaz'),
+					{
+                    	name: "AES-CBC",
+                    	length: 256,
+                	},
+					false,
+					["encrypt", "decrypt"]
+				)
+                .then(function(key){
+				    window.crypto.subtle.encrypt(
+					    {
+					        name: "AES-CBC",
+					        iv: iv,
+					    },
+					    key,
+					    str2buf(string_data)
+					)
+					.then(function(encrypted){
+					    console.log("cipher : "+buf2hex(encrypted));
+					    console.log("iv : "+buf2hex(iv));
+					})
+					.catch(function(err){
+					    console.error(err);
+					});
+				})
+				.catch(function(err){
+				    console.error(err);
+				});
+			}
+
+			function aes256_decrypt(keyddd, hex_iv, hex_data){
+				window.crypto.subtle.importKey(
+					"raw",
+					str2buf('azertyuiopazertyuiopazertyuiopaz'),
+					{
+                    	name: "AES-CBC",
+                    	length: 256,
+                	},
+					false,
+					["encrypt", "decrypt"]
+				)
+                .then(function(key){
+                	console.log(key)
+				    window.crypto.subtle.decrypt(
+					    {
+					        name: "AES-CBC",
+					        iv: hex2buf(hex_iv), //The initialization vector you used to encrypt
+					    },
+					    key,
+					    hex2buf(hex_data)
+					)
+					.then(function(decrypted){
+					    console.log(buf2str(new Uint8Array(decrypted)));
+					})
+					.catch(function(err){
+					    console.error(err);
+					});
+				})
+				.catch(function(err){
+				    console.error(err);
+				});
+			}
+
+			function submit_link(){
+				var link = document.getElementById('url_input').value;
+				var key = Math.random().toString(36).slice(2);
+				sha512(key).then(hash => sha512(hash).then(hash => sha512(hash).then(hash => console.log(hash))));
+				var data = 'key='+link;
+				send_data(data, show_link);
+			}
+
+			function show_link(response){
+				try {
+					var result = JSON.parse(response);
+					if(result["state"] != "OK"){
+						throw 'State error';
+					}else{
+						document.getElementById("result").innerHTML = "Your protected link : " + result["link"];
+					}
+				} catch(error) {
+					document.getElementById("result").innerHTML = response;
+				}
+				
+			}
+
+			function get_link(){
+				grecaptcha.ready(function() {
+					grecaptcha.execute('[recaptcha_public_key]', {action: 'get_link'}).then(function(token) {
+						var key = window.location.hash.split('?')[0].split('&')[0].replace('#', '')
+						var data = 'token='+token+'&key='+key;
+						send_data(data, continue_link);
+					});
+				});
+			}
+
+			function continue_link(response){
+				try {
+					var result = JSON.parse(response);
+					if(result["state"] != "OK"){
+						throw 'State error';
+					}else{
+						document.location = result["link"];
+					}
+				} catch(error) {
+					document.getElementById("result").innerHTML = '<span class="error">' + response + '</span>';
+				}
+			}
+
+			document.addEventListener("DOMContentLoaded", function() {
+				if(window.location.hash.length > 0){
+					document.getElementById('check').style.display = 'block';
+				}else{
+					document.getElementById('home').style.display = 'block';
+				}
+			});
 		</script>
 	</head>
 	<body>
@@ -167,11 +321,17 @@
 				<div id='red'></div>
 			</div>
 			<div id='texte'>
-				Simple link protection server, links are deleted after [delete_limit]
-				<br/><br/><br/>
-				Your link : <input id="url_input" type="text" autofocus /><br/>
-				<br/><br/>
-				<center><span id="submit_button" onClick="submit_link()" >Protect this link</span></center>
+				<div id="home">
+					Simple link protection server, links are deleted after [delete_limit]
+					<br/><br/><br/>
+					Your link : <input id="url_input" type="text" autofocus /><br/>
+					<br/><br/>
+					<center><span class="button" onClick="submit_link()" >Protect this link</span></center>
+				</div>
+				<div id="check">
+					<br/><br/><br/><br/>
+					<center><span class="button continue_button" onClick="get_link()" >Continue</span><center>
+				</div>
 				<br/><br/><br/>
 				<span id="result"></span>
 			</div>

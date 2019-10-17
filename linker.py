@@ -105,27 +105,19 @@ class request_handler(BaseHTTPRequestHandler):
                     self.send_header('Content-type', 'image/png')
                     self.end_headers()
                     self.wfile.write(image.read())
-            else:
-                with open(settings["current_directory"]+'/'+'check.html', 'r') as checkpage:
-                    self.send_response(200)
-                    self.send_header('Content-type', 'text/html')
-                    self.end_headers()
-                    # Send HTML page with replaced data
-                    html = checkpage.read()
-                    html = html.replace("[url]", settings["url"])
-                    html = html.replace("[recaptcha_public_key]", settings["recaptcha_public_key"])
-                    self.wfile.write(str.encode(html))
-        else:
-            # Open HTML homepage file
-            with open(settings["current_directory"]+'/'+'index.html', 'r') as homepage:
-                self.send_response(200)
-                self.send_header('Content-type', 'text/html')
-                self.end_headers()
-                # Send HTML page with replaced data
-                html = homepage.read()
-                html = html.replace("[url]", settings["url"])
-                html = html.replace("[delete_limit]", human_readable_time(int(settings["delete_limit"]) * 60 * 60))
-                self.wfile.write(str.encode(html))
+                return
+        # Open HTML homepage file
+        with open(settings["current_directory"]+'/'+'index.html', 'r') as homepage:
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.send_header('Cache-Control', 'no-cache')
+            self.end_headers()
+            # Send HTML page with replaced data
+            html = homepage.read()
+            html = html.replace("[url]", settings["url"])
+            html = html.replace("[recaptcha_public_key]", settings["recaptcha_public_key"])
+            html = html.replace("[delete_limit]", human_readable_time(int(settings["delete_limit"]) * 60 * 60))
+            self.wfile.write(str.encode(html))
         return
 
     def do_POST(self):
