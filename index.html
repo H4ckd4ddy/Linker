@@ -182,7 +182,7 @@
 				    },
 				    new Uint8Array(encoder.encode(message))
 				).then(function(hash){
-			    	return buf2hex(hash);
+			    	console.log(buf2hex(hash));
 				}).catch(function(err){
 				    console.error(err);
 				});
@@ -239,7 +239,7 @@
 				    window.crypto.subtle.decrypt(
 					    {
 					        name: "AES-CBC",
-					        iv: hex2buf(hex_iv), //The initialization vector you used to encrypt
+					        iv: hex2buf(hex_iv),
 					    },
 					    key,
 					    hex2buf(hex_data)
@@ -258,10 +258,13 @@
 
 			function submit_link(){
 				var link = document.getElementById('url_input').value;
-				var key = Math.random().toString(36).slice(2);
-				sha512(key).then(hash => sha512(hash).then(hash => sha512(hash).then(hash => console.log(hash))));
-				var data = 'key='+link;
-				send_data(data, show_link);
+				var key = buf2hex(window.crypto.getRandomValues(new Uint8Array(4)));
+				hash_link(key, link);
+
+				//sha512(key).then(hash => sha512(hash).then(hash => sha512(hash).then(hash => console.log(hash))));
+
+				//var data = 'key='+link;
+				//send_data(data, show_link);
 			}
 
 			function show_link(response){

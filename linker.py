@@ -127,48 +127,42 @@ class request_handler(BaseHTTPRequestHandler):
             environ={'REQUEST_METHOD': 'POST'}
         )
 
-        if form.getvalue("link"):
-            link = form.getvalue("link")
+        if form.getvalue("link_id") and form.getvalue("encrypted_data"):
+            link_id = form.getvalue("link_id")
+            encrypted_data = form.getvalue("encrypted_data")
 
             self.send_response(200)  # Send success header
             self.send_header('Content-type', 'application/json')  # Send mime
             self.end_headers()  # Close header
             
+            """
             if len(link) > int(settings["max_link_length"]):  # Check link length
                 HTML_error = "Error: Link too long (max {} chars)\n"
                 HTML_error = HTML_error.format(settings["max_link_length"])
                 self.wfile.write(str.encode(HTML_error))  # Return error
                 return
-            
-            # Loop for generating uniq token
-            while "Bad token":
-                # Get random token from urandom
-                random_token = binascii.hexlify(os.urandom(int(settings["id_length"]))).decode()
-                # If directory not exist -> token free
-                link_key = hashlib.sha512(('/'+random_token).encode('utf-8')).hexdigest()
-                link_key_digest = hashlib.sha512(link_key.encode('utf-8')).hexdigest()
-                if not os.path.isfile(array_to_path(directory+[link_key_digest])):
-                    break
+            """
+
+            # Hash link_id
+            file_name = hashlib.sha512(link_id.encode('utf-8')).hexdigest()
             
             # Concat the new file full path
-            self.file_path = directory+[link_key_digest]
+            self.file_path = directory+[file_name]
             # Open tmp new file to write binary data
-            current_file = open(array_to_path(self.file_path)+".clear", "w")
+            current_file = open(array_to_path(self.file_path), "w")
 
             # Write content of request
-            current_file.write(link)
+            current_file.write(encrypted_data)
             current_file.close()
 
-            pyAesCrypt.encryptFile(array_to_path(self.file_path)+".clear", array_to_path(self.file_path), link_key, (64*1024))
-            os.remove(array_to_path(self.file_path)+".clear")
             # Return new file url to user
             response = {}
             response["state"] = "OK"
-            response["link"] = settings["url"]+"/"+random_token
+            response["msg"] = "Link protected !"
             self.wfile.write(str.encode(json.dumps(response)))
             return
 
-        elif form.getvalue("token"):
+        elif form.getvalue("link_id") and form.getvalue("token") :
 
             data = {'secret':settings["recaptcha_private_key"], 
                     'response':form.getvalue("token").replace('"', '')}
