@@ -1,0 +1,115 @@
+body, input {
+	font-family: courier,arial;
+	color: white;
+}
+#main_title {
+	position: absolute;
+	top: 30px;
+	left: 30px;
+	color: #ff4d4d;
+	font-weight: bold;
+	font-size: 30px;
+}
+#CLI {
+	height: 300px;
+	width: 650px;
+	padding: 25px;
+	position: absolute;
+	margin: auto;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	background: black;
+	border-radius: 0 0 7px 7px;
+}
+
+#CLI #bar {
+	position: absolute;
+	top: -25px;
+	left: 0;
+	right: 0;
+	width: 100%;
+	height: 25px;
+	border-radius: 7px 7px 0 0;
+	background: #e0e0e0;
+	text-align: center;
+}
+
+#CLI #bar #title {
+	font-size: 80%;
+	color: #757575;
+	margin-top: 5px;
+}
+#CLI #bar #green {
+	position: absolute;
+	top: 5px;
+	right: 10px;
+	height: 15px;
+	width: 15px;
+	border-radius: 25px;
+	background: #3cba3c;
+	border: solid 1px grey;
+}
+#CLI #bar #orange {
+	position: absolute;
+	top: 5px;
+	right: 33px;
+	height: 15px;
+	width: 15px;
+	border-radius: 25px;
+	background: #fcbd51;
+	border: solid 1px grey;
+}
+#CLI #bar #red {
+	position: absolute;
+	top: 5px;
+	right: 56px;
+	height: 15px;
+	width: 15px;
+	border-radius: 25px;
+	background: #ff5757;
+	border: solid 1px grey;
+}
+#texte {
+	margin-top: 50px;
+	font-size: 15px;
+}
+#home {
+	display: none;
+}
+#check {
+	display: none;
+}
+#url_input {
+	background: none;
+	border: none;
+	outline: none;
+	font-size: 15px;
+	width: 530px;
+	border-bottom: solid 1px white;
+}
+.button {
+	border: solid 2px white;
+	padding: 6px;
+	cursor: pointer;
+}
+.continue_button {
+	font-size: 50px;
+	font-weight: bold;
+}
+#submit_button:hover {
+	border-color: grey;
+}
+.error {
+	color: red;
+}
+#author {
+	position: absolute;
+	bottom: 10px;
+	left: 10px;
+	color: #808080;
+}
+.grecaptcha-badge {
+	visibility: hidden;
+}
