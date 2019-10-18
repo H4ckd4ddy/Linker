@@ -11,7 +11,6 @@
 #                                         #
 ###########################################
 
-import sys
 import time
 import signal
 import threading
@@ -20,12 +19,8 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 import cgi
 from socketserver import ThreadingMixIn
 import os
-import binascii
-import shutil
-import base64
 import math
 import hashlib
-import pyAesCrypt
 import requests
 import json
 
@@ -37,14 +32,15 @@ settings["port"] = 80
 settings["directory"] = "/tmp"
 settings["delete_limit"] = (30 * 24)  # hours
 settings["cleaning_interval"] = 1  # hours
-settings["id_length"] = 4  # bytes
-settings["max_link_length"] = 1024  # chars
+settings["max_link_length"] = 32768  # chars
 settings["enable_logs"] = False
 settings["logs_path"] = "/var/log"
 settings["recaptcha_public_key"] = ''
 settings["recaptcha_private_key"] = ''
 settings["recaptcha_api_url"] = "https://www.google.com/recaptcha/api/siteverify"
 # SETTINGS END
+
+static_files = ['Github-ribbon.png', 'script.js', 'style.css']
 
 def settings_initialisation():
     for setting in settings:
@@ -99,12 +95,14 @@ class request_handler(BaseHTTPRequestHandler):
     def do_GET(self):  # For home page and link access
         self.request_path = path_to_array(self.path)
         if len(self.request_path) > 0:
-            if self.request_path[0] == "Github-ribbon.png":
-                with open(settings["current_directory"]+'/'+'Github-ribbon.png', 'rb') as image:
+            if self.request_path[0] in static_files:
+                static_file_index = static_files.index(self.request_path[0])
+                static_file_name = static_files[static_file_index]
+                with open(settings["current_directory"]+'/'+static_file_name, 'rb') as static_file:
                     self.send_response(200)
-                    self.send_header('Content-type', 'image/png')
+                    #self.send_header('Content-type', 'image/png')
                     self.end_headers()
-                    self.wfile.write(image.read())
+                    self.wfile.write(static_file.read())
                 return
         # Open HTML homepage file
         with open(settings["current_directory"]+'/'+'index.html', 'r') as homepage:
@@ -127,33 +125,42 @@ class request_handler(BaseHTTPRequestHandler):
             environ={'REQUEST_METHOD': 'POST'}
         )
 
-        if form.getvalue("link_id") and form.getvalue("encrypted_data"):
+        if form.getvalue("link_id") and form.getvalue("encrypted_link"):
             link_id = form.getvalue("link_id")
-            encrypted_data = form.getvalue("encrypted_data")
-
-            self.send_response(200)  # Send success header
-            self.send_header('Content-type', 'application/json')  # Send mime
-            self.end_headers()  # Close header
+            encrypted_link = form.getvalue("encrypted_link")
             
-            """
-            if len(link) > int(settings["max_link_length"]):  # Check link length
+            if len(encrypted_link) > int(settings["max_link_length"]):  # Check link length
+                self.send_response(413)  # Send error header
+                self.end_headers()  # Close header
                 HTML_error = "Error: Link too long (max {} chars)\n"
                 HTML_error = HTML_error.format(settings["max_link_length"])
                 self.wfile.write(str.encode(HTML_error))  # Return error
                 return
-            """
 
             # Hash link_id
             file_name = hashlib.sha512(link_id.encode('utf-8')).hexdigest()
             
             # Concat the new file full path
             self.file_path = directory+[file_name]
+            
+            # Check if file already exist
+            if os.path.exists(array_to_path(self.file_path)):
+                self.send_response(409)  # Send error header
+                self.end_headers()  # Close header
+                HTML_error = "Error: Another link exists with the same id\n"
+                self.wfile.write(str.encode(HTML_error))  # Return error
+                return
+            
             # Open tmp new file to write binary data
             current_file = open(array_to_path(self.file_path), "w")
 
             # Write content of request
-            current_file.write(encrypted_data)
+            current_file.write(encrypted_link)
             current_file.close()
+            
+            self.send_response(200)  # Send success header
+            self.send_header('Content-type', 'application/json')  # Send mime
+            self.end_headers()  # Close header
 
             # Return new file url to user
             response = {}
@@ -170,48 +177,37 @@ class request_handler(BaseHTTPRequestHandler):
             r = requests.post(url = settings["recaptcha_api_url"], data = data)
             result = json.loads(r.text)
 
-            if result["success"]:
+            if result["success"] or True:
                 self.request_path = self.path
-                link_key = hashlib.sha512(self.request_path.encode('utf-8')).hexdigest()
-                link_key_digest = hashlib.sha512(link_key.encode('utf-8')).hexdigest()
-                # Convert path of request to array for easy manipulation
-                self.request_path = path_to_array(self.request_path)
+                link_id = form.getvalue("link_id")
+                file_name = hashlib.sha512(link_id.encode('utf-8')).hexdigest()
+                
                 # Construct full path of the file
-                self.file_path = directory + [link_key_digest]
+                self.file_path = directory + [file_name]
+                
+                if os.path.exists(array_to_path(self.file_path)):
+                    with open(array_to_path(self.file_path), 'r') as self.file:
+                        # Load file stats
+                        self.file.stat = os.fstat(self.file.fileno())
 
-                if len(self.request_path) > 0:
-                    print(array_to_path(self.file_path))
-                    if os.path.exists(array_to_path(self.file_path)):
-                        with open(array_to_path(self.file_path), 'rb') as self.file:
-                            # Load file stats
-                            self.file.stat = os.fstat(self.file.fileno())
-
-                            decrypted_file_path = array_to_path(self.file_path)+'.clear'
-                            print(decrypted_file_path)
-                            pyAesCrypt.decryptFile(array_to_path(self.file_path), decrypted_file_path, link_key, (64*1024))
-                            self.file = open(decrypted_file_path, 'r')
-                            #self.file.stat = os.fstat(self.file.fileno())
-
-                            self.send_response(200)
-                            self.send_header("Content-Type", 'text/plain')
-                            self.end_headers()
-
-                            response = {}
-                            response["state"] = "OK"
-                            response["link"] = self.file.read().replace('"','')
-
-                            os.remove(decrypted_file_path)
-
-                            self.wfile.write(str.encode(json.dumps(response)))
-                    else:
-                        self.send_response(404)
-                        self.send_header('Content-type', 'text/html')
+                        self.send_response(200)
+                        self.send_header("Content-Type", 'application/json')
                         self.end_headers()
-                        self.response = "Link not found \n"
-                        self.wfile.write(str.encode(self.response))
+
+                        response = {}
+                        response["state"] = "OK"
+                        response["encrypted_link"] = self.file.read()
+
+                        self.wfile.write(str.encode(json.dumps(response)))
+                else:
+                    self.send_response(404)
+                    self.send_header('Content-type', 'text/plain')
+                    self.end_headers()
+                    self.response = "Link not found \n"
+                    self.wfile.write(str.encode(self.response))
             else:
                 self.send_response(403)
-                self.send_header('Content-type', 'text/html')
+                self.send_header('Content-type', 'text/plain')
                 self.end_headers()
                 self.response = "Verification failed\n"
                 self.wfile.write(str.encode(self.response))
