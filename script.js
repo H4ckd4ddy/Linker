@@ -147,9 +147,8 @@ function show_link(response, key, error=false){
 }
 
 async function get_link(){
-	var token = 'ok';
-	/*grecaptcha.ready(function() {
-		grecaptcha.execute('[recaptcha_public_key]', {action: 'get_link'}).then(async function(token) {*/
+	grecaptcha.ready(function() {
+		grecaptcha.execute(recaptcha_public_key, {action: 'get_link'}).then(async function(token) {
 			var key = window.location.hash.split('?')[0].split('&')[0].replace('#', '')
 			var link_id = await sha256(key)
 							.then(hash => sha256(hash))
@@ -158,8 +157,8 @@ async function get_link(){
 			var aes_key = await sha256(key);
 			var data = 'token='+token+'&link_id='+link_id;
 			send_data(data, continue_link, key);
-		/*});
-	});*/
+		});
+	});
 }
 
 async function continue_link(response, key, error=false){

@@ -177,7 +177,7 @@ class request_handler(BaseHTTPRequestHandler):
             r = requests.post(url = settings["recaptcha_api_url"], data = data)
             result = json.loads(r.text)
 
-            if result["success"] or True:
+            if result["success"]:
                 self.request_path = self.path
                 link_id = form.getvalue("link_id")
                 file_name = hashlib.sha512(link_id.encode('utf-8')).hexdigest()
